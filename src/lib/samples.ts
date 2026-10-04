@@ -64,29 +64,49 @@ export function p6mSample(): Project {
 export function glideSample(): Project {
   const w = 260;
   const h = 200;
-  // pg fundamental half is y: 0..h/2. A long feather crosses the top; the glide carries
-  // it to a mirrored shape displaced by half a vertical period.
-  const feather = [
-    { type: 'M' as const, x: 18, y: 22 },
-    { type: 'Q' as const, cx: 76, cy: -18, x: 132, y: 28 },
-    { type: 'C' as const, cx1: 170, cy1: 58, cx2: 214, cy2: 48, x: 247, y: 78 },
-    { type: 'L' as const, x: 240, y: 97 },
-    { type: 'C' as const, cx1: 185, cy1: 68, cx2: 116, cy2: 74, x: 74, y: 61 },
-    { type: 'Q' as const, cx: 42, cy: 52, x: 18, y: 22 },
+  // pg fundamental half is y: 0..h/2. For the exported tile to actually repeat,
+  // every motif must (a) stay strictly inside the half so the glide image closes
+  // it smoothly at y = 0 and y = h/2, and (b) cross the left/right edges with the
+  // same cross-section (this feather enters at x<0 and leaves at x>w at the same
+  // y range), so horizontal translation joins without a step.
+  // Flat horizontal ribbon crossing BOTH x-edges with identical straight vertical
+  // ends (y=24..40): horizontal translation joins seamlessly, and because its
+  // edges are horizontal the glide image (mirror at y=0 + shift w/2) joins it
+  // smoothly across the y=0 and y=h/2 seams as well.
+  const ribbon = [
+    { type: 'M' as const, x: -40, y: 24 },
+    { type: 'L' as const, x: w + 40, y: 24 },
+    { type: 'L' as const, x: w + 40, y: 40 },
+    { type: 'L' as const, x: -40, y: 40 },
     { type: 'Z' as const }
   ];
-  const dot = ellipsePath(205, 24, 13, 13);
+  // An interior feather entirely inside the fundamental half; its glide reflection
+  // fills the opposite half upside down, demonstrating the pg symmetry without
+  // touching any periodic boundary.
+  const feather = [
+    { type: 'M' as const, x: 40, y: 62 },
+    { type: 'C' as const, cx1: 80, cy1: 52, cx2: 120, cy2: 54, x: 156, y: 66 },
+    { type: 'C' as const, cx1: 120, cy1: 80, cx2: 80, cy2: 82, x: 40, y: 72 },
+    { type: 'Z' as const }
+  ];
+  const dot = ellipsePath(212, 76, 11, 11);
   return baseProject(
     'pg',
     '滑移反射羽毛',
     w,
     h,
     [
-      object(uid('object'), '滑移羽毛（越过边界）', feather, {
+      object(uid('object'), '跨左右边界横带', ribbon, {
         fill: '#dc2626',
         stroke: '#450a0a',
         strokeWidth: 3,
         opacity: 0.9
+      }),
+      object(uid('object'), '滑移羽毛', feather, {
+        fill: '#f97316',
+        stroke: '#7c2d12',
+        strokeWidth: 2,
+        opacity: 0.85
       }),
       object(uid('object'), '滑移点', dot, {
         fill: '#fde047',
@@ -133,4 +153,45 @@ export function rotationSample(): Project {
 
 export function defaultProject(): Project {
   return p6mSample();
+}
+
+/**
+ * p1 sample specifically for seam audit acceptance: a semi-transparent ribbon with
+ * a visible stroke whose single source path crosses BOTH periodic vertical edges
+ * (x = 0 and x = w). Its cross-section at the two edges is identical, so the
+ * geometry mask and premultiplied composite must agree across the left/right seam
+ * after horizontal translation — while deliberately breaking (e.g. dragging a node
+ * on one side) must fail and point back to this unique source object.
+ */
+export function seamP1Sample(): Project {
+  const w = 260;
+  const h = 200;
+  const ribbon = [
+    { type: 'M' as const, x: -34, y: 82 },
+    { type: 'L' as const, x: w + 34, y: 82 },
+    { type: 'L' as const, x: w + 34, y: 112 },
+    { type: 'L' as const, x: -34, y: 112 },
+    { type: 'Z' as const }
+  ];
+  const inner = ellipsePath(w / 2, h / 2 + 34, 26, 15);
+  return baseProject(
+    'p1',
+    'p1 跨左右边界透明路径',
+    w,
+    h,
+    [
+      object(uid('object'), '跨边界透明描边带', ribbon, {
+        fill: '#14b8a6',
+        stroke: '#134e4a',
+        strokeWidth: 4,
+        opacity: 0.45
+      }),
+      object(uid('object'), '内部圆点', inner, {
+        fill: '#f59e0b',
+        stroke: '#78350f',
+        strokeWidth: 2,
+        opacity: 0.9
+      })
+    ]
+  );
 }

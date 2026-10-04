@@ -16,12 +16,23 @@
     renderOptions
   } from './lib/stores';
   import { deleteProject, listProjects, saveProject } from './lib/db';
-  import { defaultProject, glideSample, p6mSample, rotationSample } from './lib/samples';
+  import { defaultProject, glideSample, p6mSample, rotationSample, seamP1Sample } from './lib/samples';
+  import { hydrateProject } from './lib/seamStore';
   import type { Project, Tool } from './types';
 
   let savedProjects: Project[] = [];
   let saveTimer: ReturnType<typeof setTimeout> | null = null;
   let activeTab: 'group' | 'inspector' | 'seam' | 'projects' = 'group';
+  let lastProjectId = $editor.project.id;
+
+  // Re-hydrate the stored audit whenever a different project is opened; an audit
+  // always belongs to exactly one project id and never transfers to another.
+  // Content-change invalidation (edit/undo/group switch) is handled inside the
+  // audit store via the contentVersion bridge.
+  $: if ($editor.project.id !== lastProjectId) {
+    lastProjectId = $editor.project.id;
+    void hydrateProject($editor.project);
+  }
 
   const tools: Array<{ id: Tool; label: string; title: string }> = [
     { id: 'select', label: '选择/拖动', title: '选择实例并拖动；拖动映射回原始路径' },
@@ -85,6 +96,7 @@
   onMount(async () => {
     await refreshProjects();
     window.addEventListener('keydown', keyboard);
+    await hydrateProject($editor.project);
   });
 
   onDestroy(() => {
@@ -127,6 +139,7 @@
       <button on:click={() => setProject(glideSample())}>滑移样例</button>
       <button on:click={() => setProject(rotationSample())}>旋转样例</button>
       <button on:click={() => setProject(p6mSample())}>完整样例</button>
+      <button on:click={() => setProject(seamP1Sample())}>p1 接缝样例</button>
       <button on:click={newProject}>重置</button>
     </div>
     <label class="toggle"><input type="checkbox" bind:checked={$renderOptions.showDomain} />基本域</label>

@@ -4,6 +4,7 @@ import { defaultProject } from './samples';
 import { cloneObject, applyMatrixToPath } from './path';
 import { getCellSize, GROUP_SPECS, translation } from './groups';
 import type { mat3 } from 'gl-matrix';
+import { notifyContentChanged } from './contentEvents';
 
 export interface EditorState {
   project: Project;
@@ -67,6 +68,7 @@ export function undo() {
       saved: false
     };
   });
+  notifyContentChanged();
 }
 
 export function redo() {
@@ -84,6 +86,7 @@ export function redo() {
       saved: false
     };
   });
+  notifyContentChanged();
 }
 
 export function updateProject(mutator: (project: Project) => Project, record = true) {
@@ -92,6 +95,7 @@ export function updateProject(mutator: (project: Project) => Project, record = t
     const project = mutator(structuredClone(state.project));
     return { ...state, project, saved: false };
   });
+  notifyContentChanged();
 }
 
 export function setProject(project: Project, clearHistory = true) {
@@ -108,6 +112,7 @@ export function setProject(project: Project, clearHistory = true) {
     canRedo: false,
     saved: false
   });
+  notifyContentChanged();
 }
 
 export function selectObject(id: string | null, instance: string | null = null) {
@@ -153,6 +158,7 @@ export function addObject(item: PatternObject, select = true) {
     selectedId: select ? item.id : state.selectedId,
     selectedInstance: select ? null : state.selectedInstance
   }));
+  notifyContentChanged();
 }
 
 export function updateSelectedObject(mutator: (item: PatternObject) => PatternObject, record = true) {
@@ -176,7 +182,6 @@ export function deleteSelected() {
   }));
   editorStore.update((state) => ({ ...state, selectedId: null, selectedInstance: null }));
 }
-
 export function markSaved() {
   editorStore.update((state) => ({ ...state, saved: true }));
 }
