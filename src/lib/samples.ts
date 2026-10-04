@@ -134,3 +134,44 @@ export function rotationSample(): Project {
 export function defaultProject(): Project {
   return p6mSample();
 }
+
+/**
+ * p1 audit sample: one open transparent-stroked wave whose two ends run out through the
+ * LEFT and RIGHT paired edges of the conventional cell at matching heights. Under the
+ * infinite periodic composite every left-edge segment is continued by the next copy's
+ * right edge, so the geometric seam audit must pass and the exported tile repeats.
+ */
+export function p1SeamSample(): Project {
+  const w = 260;
+  const h = 190;
+  // The portions running out through both paired edges are collinear horizontal
+  // segments at the same height, so the stroke coverage bands at x=0 and x=w are
+  // identical under the period translation; the curvature lives in the interior.
+  const wave: PathSegment[] = [
+    { type: 'M', x: -30, y: 70 },
+    { type: 'L', x: 34, y: 70 },
+    { type: 'Q', cx: 84, cy: 108, x: 130, y: 72 },
+    { type: 'Q', cx: 176, cy: 36, x: 226, y: 70 },
+    { type: 'L', x: 290, y: 70 }
+  ];
+  return baseProject(
+    'p1',
+    'p1 跨左右边界透明描边',
+    w,
+    h,
+    [
+      object(uid('object'), '越界透明波浪', wave, {
+        fill: 'transparent',
+        stroke: '#0ea5e9',
+        strokeWidth: 5,
+        opacity: 0.55
+      }),
+      object(uid('object'), '内部参考圆点', ellipsePath(130, 140, 16, 16), {
+        fill: '#f59e0b',
+        stroke: '#78350f',
+        strokeWidth: 2,
+        opacity: 0.9
+      })
+    ]
+  );
+}

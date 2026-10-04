@@ -16,7 +16,8 @@
     renderOptions
   } from './lib/stores';
   import { deleteProject, listProjects, saveProject } from './lib/db';
-  import { defaultProject, glideSample, p6mSample, rotationSample } from './lib/samples';
+  import { defaultProject, glideSample, p1SeamSample, p6mSample, rotationSample } from './lib/samples';
+  import { hydrateAudit, notifyProjectChanged } from './lib/seam/auditStore';
   import type { Project, Tool } from './types';
 
   let savedProjects: Project[] = [];
@@ -80,9 +81,39 @@
     }
   }
 
-  const unsubscribe = editor.subscribe(scheduleSave);
+  let attachedProjectId: string | null = null;
+  let attachSerial = 0;
+
+  function attachProject(project: Project) {
+    // Explicit load / switch / sample / reset: adopt a stored verdict only if its
+    // fingerprint and schema still match, otherwise show stale.
+    attachedProjectId = project.id;
+    const serial = ++attachSerial;
+    void hydrateAudit(project).then(() => {
+      // A later attach supersedes this hydration.
+      if (serial === attachSerial) attachedProjectId = project.id;
+    });
+  }
+
+  function trackProjectChange(project: Project) {
+    if (attachedProjectId !== project.id) {
+      // Store notification for a project we have not explicitly attached yet: hydrate it
+      // (covers the very first notification before onMount's attachProject runs).
+      attachProject(project);
+      return;
+    }
+    // Edits, undo/redo, group switches and autosave-written content all land here: the
+    // audit epoch token advances and any late async result is discarded.
+    notifyProjectChanged(project);
+  }
+
+  const unsubscribe = editor.subscribe((state) => {
+    scheduleSave();
+    trackProjectChange(state.project);
+  });
 
   onMount(async () => {
+    attachProject($editor.project);
     await refreshProjects();
     window.addEventListener('keydown', keyboard);
   });
@@ -127,6 +158,7 @@
       <button on:click={() => setProject(glideSample())}>滑移样例</button>
       <button on:click={() => setProject(rotationSample())}>旋转样例</button>
       <button on:click={() => setProject(p6mSample())}>完整样例</button>
+      <button on:click={() => setProject(p1SeamSample())}>p1 接缝样例</button>
       <button on:click={newProject}>重置</button>
     </div>
     <label class="toggle"><input type="checkbox" bind:checked={$renderOptions.showDomain} />基本域</label>

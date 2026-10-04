@@ -45,6 +45,8 @@ export interface Project {
   cellWidth: number;
   cellHeight: number;
   objects: PatternObject[];
+  /** Schema revision of the project document; older documents migrate as unaudited. */
+  schemaVersion?: number;
   updatedAt: number;
 }
 
